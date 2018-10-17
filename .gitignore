@@ -1,2 +1,5 @@
 *.ipynb
 *.pyc
+*.bin
+*.c
+*.h
