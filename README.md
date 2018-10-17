@@ -55,7 +55,7 @@ I intend to work on these soon and maybe refactor some portions of the code and 
 #### 5.2) Maybe one day
 
 I also would like to improve two things about this software, but don't know how to do.
-- Make it portable with Nuikta
+- Make it portable with [Nuikta](http://nuitka.net/)
 - Use timestamps with milliseconds precision (other OPC DA clients have this feature).
 - Use the dll without registering thus not needing administrative permission.
 
