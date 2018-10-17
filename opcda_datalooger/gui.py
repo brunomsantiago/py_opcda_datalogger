@@ -16,7 +16,8 @@ from PySide.QtGui import (QAbstractItemView,
                           QVBoxLayout,
                           QWidget)
 # from PySide.QtGui.QAbstractItemView import MultiSelection
-from PySide.QtCore import QRegExp, Qt
+from PySide.QtCore import QRegExp, Qt, QTimer
+import opcda
 
 
 class MainWindow(QMainWindow):
@@ -29,7 +30,7 @@ class MainWindow(QMainWindow):
 
         self.layout = QHBoxLayout(self)
 
-        self.configuration = Configuration(self)
+        self.configuration = Configuration(self, opc)
         self.configuration_dock = QDockWidget("Configuration", self)
         self.configuration_dock.setWidget(self.configuration)
         self.configuration_dock.setFeatures(QDockWidget.NoDockWidgetFeatures)
@@ -44,36 +45,55 @@ class MainWindow(QMainWindow):
         self.setLayout(self.layout)
         self.resize(900, 600)
 
+        self.logging_timer = QTimer(self)
+        self.logging_timer.timeout.connect(self._loogging_callback)
+
     def _start_logging(self):
-        print('Start Logging')
+        self.tags = self.configuration.tag_selection.selected_tags()
+        header, line = opcda.read(self.opc, self.tags)
+        self.logging_area.te_logging.clear()
+        self.logging_area.te_logging.append(header)
+        self.logging_timer.start(500)
+
+    def _loogging_callback(self):
+        header, line = opcda.read(self.opc, self.tags)
+        self.logging_area.te_logging.append(line)
 
     def _stop_logging(self):
-        print('Stop Logging')
+        self.logging_timer.stop()
 
 
 class Configuration(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, opc=None):
         super(Configuration, self).__init__()
         self.layout = QVBoxLayout(self)
 
-        self.server = Server(self)
+        # TagSelection() is inited before Server() but added later (inited)
+        self.tag_selection = TagSelecion(self, opc)
+
+        self.server = Server(self, opc, self.tag_selection)
         self.layout.addWidget(self.server)
 
-        self.tag_selection = TagSelecion(self)
+        # TagSelection() is instanced before Server() but added later (added)
         self.layout.addWidget(self.tag_selection)
 
         self.read_options = ReadOptions(self)
+        self.read_options.setEnabled(False)
         self.layout.addWidget(self.read_options)
 
         self.logging_options = LoggingOptions()
+        self.logging_options.setEnabled(False)
         self.layout.addWidget(self.logging_options)
 
         self.setLayout(self.layout)
 
 
 class Server(QGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, opc=None, tag_selection=None):
         super(Server, self).__init__()
+
+        self.opc = opc
+        self.tag_selection = tag_selection
 
         self.setTitle('OPC Server Selection')
 
@@ -95,18 +115,23 @@ class Server(QGroupBox):
         self._refresh()
 
     def _refresh(self):
-        servers = load_opc_servers()
+        servers = opcda.servers(self.opc)
         self.combobox_server.clear()
         self.combobox_server.addItems(servers)
 
     def _connect(self):
         server = self.combobox_server.currentText()
-        connect_to(server)
+        connected = opcda.connect(self.opc, server)
+        if connected:
+            if self.tag_selection:
+                self.tag_selection._refresh()
 
 
 class TagSelecion(QGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, opc=None):
         super(TagSelecion, self).__init__()
+
+        self.opc = opc
 
         self.setTitle('Tag Selection')
 
@@ -143,11 +168,11 @@ class TagSelecion(QGroupBox):
 
         self.setLayout(self.layout)
 
-    def get_selected_tags(self):
+    def selected_tags(self):
         return [item.text() for item in self.listw_tags.selectedItems()]
 
     def _refresh(self):
-        self.tags_all = load_opc_tags()
+        self.tags_all = opcda.tags(self.opc)
         self.listw_tags.clear()
         self.listw_tags.addItems(self.tags_all)
 
@@ -169,17 +194,12 @@ class TagSelecion(QGroupBox):
         else:
             matched_tags = [tag for tag in self.tags_all if
                             pattern in tag.lower()]
-        # print('pattern: {}'.format(pattern))
-        # print('{} matched_tags: {}'.format(len(matched_tags), matched_tags))
         for tag in matched_tags:
             item = self.listw_tags.findItems(tag, Qt.MatchExactly)[0]
             if toggle is 'select':
                 item.setSelected(True)
             elif toggle is 'deselect':
                 item.setSelected(False)
-            # print('  tag: {}'.format(tag))
-            # print('  item: {}'.format(item))
-            # print('  item text: {}'.format(item.text()))
 
 
 class ReadOptions(QGroupBox):
@@ -283,16 +303,18 @@ class LoggingArea(QWidget):
         self.hbox_buttons_bottom.addWidget(self.button_clipboard)
         self.button_file = QPushButton('Save to CSV', self)
         self.button_file.clicked.connect(self._save_to_csv)
+        self.button_file.setEnabled(False)
         self.hbox_buttons_bottom.addWidget(self.button_file)
         self.layout.addLayout(self.hbox_buttons_bottom)
 
         self.setLayout(self.layout)
 
     def _clear_data(self):
-        print('Clear')
+        self.te_logging.clear()
 
     def _copy_to_cliboard(self):
-        print('Copy to clipboard')
+        self.te_logging.selectAll()
+        self.te_logging.copy()
 
     def _save_to_csv(self):
         print('Save to csv')
@@ -300,29 +322,10 @@ class LoggingArea(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    main_window = MainWindow()
+    opc = opcda.start()
+    main_window = MainWindow(opc)
     main_window.show()
     app.exec_()
-
-
-# Temporary functions to be imported
-
-def load_opc_tags():
-    tags = ['Saw-toothed Waves.Int1',
-            'Saw-toothed Waves.Int2',
-            'Saw-toothed Waves.Int4',
-            'Triangle Waves.Int1',
-            'Triangle Waves.Int2',
-            'Triangle Waves.Int4']
-    return tags
-
-
-def load_opc_servers():
-    return ['Matrikon', 'Greybox']
-
-
-def connect_to(server):
-    print('Connect to {}'.format(server))
 
 
 if __name__ == "__main__":
