@@ -50,11 +50,13 @@ The software is working, however it very limited on options (I disabled them on 
 
 It is also missing docstrings and unit tests.
 
-I intend to work on these soon and maybe refactor some portions of the conde.
+I intend to work on these soon and maybe refactor some portions of the code and improve the graphical interface style.
 
-#### 5.2) Would like
+#### 5.2) Maybe one day
 
 I also would like to improve two things about this software, but don't know how to do.
+- Make it portable with Nuikta
+- Use timestamps with milliseconds precision (other OPC DA clients have this feature).
+- Use the dll without registering thus not needing administrative permission.
 
-1. Use timestamps with milliseconds precision (other OPC DA clients have this feature).
-2. Use the dll without registering thus not needing administrative permission.
+Contibutions are very welcome.
