@@ -41,6 +41,8 @@ However it might be useful for other people, so I decided tho share.
 
 I don't intend to maintain in the long term nor give support.
 
+I know OPC Classic and COM/DCOM are ancient and odd technology. I prefer [OPC UA](https://en.wikipedia.org/wiki/OPC_Unified_Architecture) much more. However I still need to use and test OPC classic sometimes.
+
 ## 4) License
 I intend my own code to have the MIT License, however I haven't checked license compatibility with any of dependecies yet.
 
