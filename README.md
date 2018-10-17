@@ -28,7 +28,7 @@ The easiest way is to download the [Graybox OPC DA Auto Wrapper is a DLL-module]
 **Notes**:
 - OPC DA is very tied to Microsoft DCOM technology. So unfortunally this software is Windows only.
 - It requires administrative permissions to register the DLL-module.
-- Graybox allow free distribution of its dll, so it is also avaiable in this repository.
+- Graybox allow free distribution of its dll, so it is also [avaiable in this repository](https://github.com/brunomsantiago/py_opcda_datalogger/blob/master/graybox_dll/graybox_opc_automation_wrapper.zip).
 
 #### 2.3) OPC server
 To use this Datalogger it is necessary to have a running OPC Server, either a real one from a SCADA System or a Simulation Server.
